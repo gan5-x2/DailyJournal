@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>日计 - Auth Version</title>
+    <link href="/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --modal-bg: #1e1e1e;
+            --card-bg: #252525;
+            --key-bg: #2c2c2c;
+            --text-main: #e0e0e0;
+            --text-sub: #757575;
+            --border-color: #333;
+
+            --color-expense: #d32f2f;
+            --color-income: #00c853;
+
+            --icon-food: #ffb74d; --icon-transport: #64b5f6; --icon-shopping: #ba68c8;
+            --icon-home: #4db6ac; --icon-fun: #fff176; --icon-medical: #e57373;
+            --icon-edu: #7986cb; --icon-social: #f06292; --icon-other: #bdbdbd;
+            --icon-salary: #69f0ae; --icon-part: #b9f6ca;
+        }
+
+        body.light-theme {
+            --bg-color: #f5f5f5; --modal-bg: #ffffff; --card-bg: #eeeeee;
+            --key-bg: #e0e0e0; --text-main: #212121; --text-sub: #757575; --border-color: #e0e0e0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body {
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* --- 登录页样式 --- */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px;
+        }
+        .login-box { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 15px; }
+        .login-input {
+            padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);
+            background: var(--card-bg); color: var(--text-main); font-size: 1rem; outline: none;
+        }
+        .code-row { display: flex; gap: 10px; }
+        .btn-send-code {
+            padding: 0 20px; border-radius: 8px; border: none;
+            background: var(--color-income); color: black; font-weight: bold; cursor: pointer; white-space: nowrap;
+        }
+        .btn-send-code:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-login {
+            padding: 15px; border-radius: 8px; border: none;
+            background: var(--text-main); color: var(--bg-color); font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+
+        /* --- 原有样式保持不变 --- */
+        .header {
+            padding: 20px; background: linear-gradient(to bottom, rgba(26,26,26,0.9), var(--bg-color));
+            display: flex; justify-content: space-between; align-items: flex-end; height: 100px;
+        }
+        .date-info h2 { font-size: 1rem; font-weight: normal; color: var(--text-sub); margin-bottom: 5px; }
+        .total-display { text-align: right; }
+        .total-amount { font-size: 2.5rem; font-weight: bold; letter-spacing: -1px; transition: color 0.3s; }
+        .total-amount span { font-size: 1.5rem; color: var(--text-sub); }
+
+        .text-expense { color: var(--color-expense); }
+        .text-income { color: var(--color-income); }
+
+        .content-area { flex: 1; overflow-y: auto; padding: 0 20px 80px 20px; position: relative; }
+        .empty-state { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); color: var(--text-sub); font-size: 0.9rem; text-align: center; width: 100%; }
+
+        .timeline-item { display: flex; padding: 15px 0; border-bottom: 1px solid var(--border-color); cursor: pointer; align-items: center; transition: background 0.2s; }
+        .timeline-item:active { background-color: rgba(128,128,128,0.1); }
+
+        .item-left { width: 50px; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-right: 15px; }
+        .item-icon {
+            width: 36px; height: 36px; background: var(--card-bg); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; color: #aaa;
+        }
+
+        .icon-food { color: var(--icon-food) !important; }
+        .icon-transport { color: var(--icon-transport) !important; }
+        .icon-shopping { color: var(--icon-shopping) !important; }
+        .icon-home { color: var(--icon-home) !important; }
+        .icon-fun { color: var(--icon-fun) !important; }
+        .icon-medical { color: var(--icon-medical) !important; }
+        .icon-edu { color: var(--icon-edu) !important; }
+        .icon-social { color: var(--icon-social) !important; }
+        .icon-other { color: var(--icon-other) !important; }
+        .icon-salary { color: var(--icon-salary) !important; }
+        .icon-part { color: var(--icon-part) !important; }
+
+        .item-time { font-size: 0.75rem; color: var(--text-sub); }
+        .item-mid { flex: 1; }
+        .item-title { font-size: 1rem; margin-bottom: 4px; font-weight: 500; }
+        .item-desc { font-size: 0.75rem; color: var(--text-sub); }
+        .item-right { text-align: right; }
+        .item-amount { font-size: 1.1rem; font-weight: 600; }
+
+        .fab-group { position: fixed; left: 20px; bottom: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 100; }
+        .fab {
+            width: 50px; height: 50px; background-color: var(--card-bg); color: var(--text-main);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid var(--border-color);
+        }
+        .fab.settings-btn { width: 50px; height: 50px; font-size: 20px; opacity: 0.8; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 200; justify-content: center; align-items: flex-end; }
+        .modal-box {
+            background: var(--modal-bg); width: 100%; max-width: 500px;
+            border-radius: 20px 20px 0 0; padding: 20px;
+            animation: slideUp 0.3s ease; max-height: 90vh; overflow-y: auto;
+            display: flex; flex-direction: column;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .top-bar { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
+        .back-btn { color: var(--text-sub); font-size: 0.9rem; cursor: pointer; }
+
+        .type-toggle { display: flex; background: #333; border-radius: 8px; padding: 2px; }
+        .type-btn {
+            padding: 6px 16px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
+            color: #aaa; transition: all 0.2s;
+        }
+        .type-btn.active.expense-mode { background: var(--color-expense); color: white; font-weight: bold; }
+        .type-btn.active.income-mode { background: var(--color-income); color: black; font-weight: bold; }
+
+        .calc-screen {
+            background: var(--card-bg); color: var(--text-main); font-size: 2.5rem;
+            text-align: right; padding: 20px; border-radius: 12px; margin-bottom: 20px;
+            min-height: 80px; display: flex; align-items: center; justify-content: flex-end;
+        }
+
+        .cat-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .tag {
+            background: var(--card-bg); padding: 6px 14px; border-radius: 16px;
+            font-size: 0.85rem; color: var(--text-sub); cursor: pointer;
+            border: 1px solid transparent; display: flex; align-items: center; gap: 5px;
+        }
+        .tag i { font-size: 0.8rem; opacity: 0.7; }
+        .tag.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); font-weight: bold; }
+        .tag.active i { opacity: 1; }
+
+        .tag.color-food { color: var(--icon-food); border-color: rgba(255, 183, 77, 0.3); background: rgba(255, 183, 77, 0.1); }
+        .tag.color-transport { color: var(--icon-transport); border-color: rgba(100, 181, 246, 0.3); background: rgba(100, 181, 246, 0.1); }
+        .tag.color-shopping { color: var(--icon-shopping); border-color: rgba(186, 104, 200, 0.3); background: rgba(186, 104, 200, 0.1); }
+        .tag.color-home { color: var(--icon-home); border-color: rgba(77, 182, 172, 0.3); background: rgba(77, 182, 172, 0.1); }
+        .tag.color-fun { color: var(--icon-fun); border-color: rgba(255, 241, 118, 0.3); background: rgba(255, 241, 118, 0.1); }
+        .tag.color-medical { color: var(--icon-medical); border-color: rgba(229, 115, 115, 0.3); background: rgba(229, 115, 115, 0.1); }
+        .tag.color-edu { color: var(--icon-edu); border-color: rgba(121, 134, 203, 0.3); background: rgba(121, 134, 203, 0.1); }
+        .tag.color-social { color: var(--icon-social); border-color: rgba(240, 98, 146, 0.3); background: rgba(240, 98, 146, 0.1); }
+        .tag.color-other { color: var(--icon-other); border-color: rgba(189, 189, 189, 0.3); background: rgba(189, 189, 189, 0.1); }
+        .tag.color-salary { color: var(--icon-salary); border-color: rgba(105, 240, 174, 0.3); background: rgba(105, 240, 174, 0.1); }
+        .tag.color-part { color: var(--icon-part); border-color: rgba(185, 246, 202, 0.3); background: rgba(185, 246, 202, 0.1); }
+        .tag.active[class*="color-"] { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+
+        .sub-cat-area {
+            background: var(--card-bg); padding: 10px; border-radius: 8px;
+            min-height: 40px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 15px; border: 1px solid var(--border-color);
+        }
+        .sub-tag { background: var(--key-bg); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; color: var(--text-sub); cursor: pointer; }
+        .sub-tag.active { background: var(--text-sub); color: var(--bg-color); }
+
+        .note-row { display:flex; align-items:center; margin-bottom:15px; color:var(--text-sub); border-bottom:1px solid var(--border-color); padding-bottom:10px; }
+        .note-row input { background:transparent; border:none; color:var(--text-main); flex:1; outline:none; }
+
+        .confirm-btn {
+            width: 100%; padding: 15px; border: none; border-radius: 10px;
+            font-size: 1.5rem; font-weight: bold; margin-bottom: 15px; cursor: pointer;
+        }
+        .confirm-btn.expense-confirm { background: var(--color-expense); color: white; }
+        .confirm-btn.income-confirm { background: var(--color-income); color: black; }
+
+        .numpad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .key { background: var(--key-bg); border: none; color: var(--text-main); font-size: 1.3rem; padding: 18px 0; border-radius: 10px; }
+        .key-del { background: var(--color-expense); color: white; }
+
+        .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .detail-title-group { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .detail-icon-circle {
+            width: 40px; height: 40px; background: var(--card-bg); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: #ccc; border: 1px solid var(--border-color); flex-shrink: 0;
+        }
+        .detail-name-display { font-size: 1.2rem; font-weight: bold; }
+        .detail-amount-display { font-size: 1.5rem; font-weight: bold; }
+        .edit-input-num { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 8px; font-size: 1.2rem; width: 100px; text-align: right; }
+        .detail-info-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 0.95rem; color: var(--text-sub); }
+        .detail-info-val { color: var(--text-main); }
+        .detail-actions { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+        .btn-text { background: none; border: none; color: var(--text-main); font-size: 1rem; cursor: pointer; padding: 10px; }
+        .btn-text.red { color: var(--color-expense); }
+        .btn-text.bold { font-weight: bold; color: var(--text-main); }
+
+        .settings-header { font-size: 1.5rem; font-weight: bold; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;}
+        .setting-group { margin-bottom: 25px; }
+        .setting-label { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 10px; display: block; }
+        .option-list { display: flex; flex-direction: column; gap: 1px; background: var(--card-bg); border-radius: 12px; overflow: hidden; }
+        .option-item { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--modal-bg); color: var(--text-main); }
+        .option-item.active { background: rgba(0, 200, 83, 0.15); color: var(--color-income); font-weight: bold; }
+        .option-item i.check { opacity: 0; }
+        .option-item.active i.check { opacity: 1; }
+        .feedback-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 8px; outline: none; resize: none; min-height: 100px; margin-bottom: 10px; }
+        .send-btn { width: 100%; padding: 12px; background: var(--color-income); color: black; border: none; border-radius: 8px; font-weight: bold; }
+
+        /* 新增：退出登录按钮样式 */
+        .logout-btn { width: 100%; padding: 12px; background: var(--color-expense); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+
+    </style>
+</head>
+<body>
+
+<!-- 【新增】登录/注册 全屏遮罩层 -->
+<div id="login-overlay" style="display:none;">
+    <h1 style="margin-bottom:30px; font-size:2rem;">日计 - 登录</h1>
+
+    <div class="login-box">
+        <!-- 邮箱输入 (type改为email) -->
+        <input type="email" id="login-phone" class="login-input" placeholder="请输入邮箱地址">
+
+        <!-- 验证码输入 + 发送按钮 -->
+        <div class="code-row">
+            <input type="text" id="login-code" class="login-input" placeholder="验证码" style="flex:1;">
+            <button id="btn-send-code" class="btn-send-code" onclick="sendLoginCode()">获取验证码</button>
+        </div>
+
+        <!-- 登录按钮 -->
+        <button class="btn-login" onclick="doLogin()">登录 / 注册</button>
+    </div>
+
+    <p style="margin-top:20px; color:var(--text-sub); font-size:0.8rem;">首次使用将自动注册账号</p>
+</div>
+
+<!-- 原有主界面结构 -->
+<div class="header">
+    <div class="date-info"><h2 id="headerDate">2026-09-29</h2></div>
+    <div class="total-display">
+        <div class="total-amount" id="headerTotalDisplay">
+            <span id="totalSign">-</span><span id="totalValue">0.0</span>
+        </div>
+    </div>
+</div>
+
+<div class="content-area">
+    <div class="empty-state" id="emptyState">还没有记录，来记一笔吧</div>
+    <div id="listContainer"></div>
+</div>
+
+<div class="fab-group">
+    <div class="fab settings-btn" onclick="openSettings()"><i class="fas fa-cog"></i></div>
+    <div class="fab" onclick="openAddModal()"><i class="fas fa-plus"></i></div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-box">
+        <div class="settings-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="back-btn" onclick="closeSettings()" style="font-size:1.2rem;"><i class="fas fa-chevron-left"></i></div>
+                <span data-i18n="settings">设置</span>
+            </div>
+        </div>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="language">语言 / Language</span>
+            <div class="option-list" id="langList">
+                <div class="option-item active" onclick="setLanguage('zh-CN', this)"><span>简体中文</span><i class="fas fa-check check"></i></div>
+                <div class="option-item" onclick="setLanguage('zh-TW', this)"><span>繁體中文</span><i class="fas fa-check check"></i></div>
+                <div class="option-item" onclick="setLanguage('en', this)"><span>English</span><i class="fas fa-check check"></i></div>
+                <div class="option-item" onclick="setLanguage('ja', this)"><span>日本語</span><i class="fas fa-check check"></i></div>
+            </div>
+        </div>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="theme">主题 / Theme</span>
+            <div class="option-list" id="themeList">
+                <div class="option-item" onclick="setTheme('system', this)"><span data-i18n="sysTheme">跟随系统</span><i class="fas fa-check check"></i></div>
+                <div class="option-item" onclick="setTheme('light', this)"><span data-i18n="lightTheme">浅色模式</span><i class="fas fa-check check"></i></div>
+                <div class="option-item active" onclick="setTheme('dark', this)"><span data-i18n="darkTheme">深色模式</span><i class="fas fa-check check"></i></div>
+            </div>
+        </div>
+        <div class="setting-group">
+            <span class="setting-label" data-i18n="feedback">意见反馈</span>
+            <textarea id="feedbackContent" class="feedback-input" placeholder="请输入建议..."></textarea>
+            <button class="send-btn" id="feedbackBtn" onclick="submitFeedback()"><i class="fas fa-paper-plane"></i> <span data-i18n="sendFeedback">发送</span></button>
+        </div>
+        <!-- 【新增】退出登录按钮 -->
+        <div class="setting-group">
+            <button class="logout-btn" onclick="doLogout()">退出登录</button>
+        </div>
+    </div>
+</div>
+
+<!-- 记账弹窗 -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <div class="top-bar">
+            <div class="back-btn" onclick="closeAddModal()"><i class="fas fa-chevron-left"></i> <span data-i18n="back">返回</span></div>
+            <div class="type-toggle">
+                <div class="type-btn expense-mode active" id="btnExpense" onclick="switchType('expense')" data-i18n="expense">支出</div>
+                <div class="type-btn income-mode" id="btnIncome" onclick="switchType('income')" data-i18n="income">收入</div>
+            </div>
+        </div>
+
+        <div class="calc-screen" id="calcScreen">0</div>
+        <div class="cat-section">
+            <div class="cat-row" id="mainCats"></div>
+        </div>
+        <div class="sub-cat-area" id="subCatArea"></div>
+
+        <div class="note-row">
+            <i class="far fa-sticky-note" style="margin-right:10px;"></i>
+            <input type="text" id="newNote" placeholder="写点备注..." style="background:transparent; border:none; color:var(--text-main); flex:1; outline:none;">
+            <span style="font-size:0.8rem; color:var(--text-sub);" id="currentDateSmall">09-29</span>
+        </div>
+
+        <button class="confirm-btn expense-confirm" id="confirmBtn" onclick="submitRecord()">√</button>
+
+        <div class="numpad">
+            <button class="key" onclick="pressKey('1')">1</button><button class="key" onclick="pressKey('2')">2</button><button class="key" onclick="pressKey('3')">3</button><button class="key key-del" onclick="pressKey('del')"><i class="fas fa-backspace"></i></button>
+            <button class="key" onclick="pressKey('4')">4</button><button class="key" onclick="pressKey('5')">5</button><button class="key" onclick="pressKey('6')">6</button><button class="key" onclick="pressKey('+')">+</button>
+            <button class="key" onclick="pressKey('7')">7</button><button class="key" onclick="pressKey('8')">8</button><button class="key" onclick="pressKey('9')">9</button><button class="key" onclick="pressKey('-')">-</button>
+            <button class="key" onclick="pressKey('C')">C</button><button class="key" onclick="pressKey('0')">0</button><button class="key" onclick="pressKey('.')">.</button><button class="key" onclick="pressKey('=')">=</button>
+        </div>
+    </div>
+</div>
+
+<!-- 详情/编辑弹窗 -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+        <div class="top-bar">
+            <div class="back-btn" onclick="closeDetail()"><i class="fas fa-chevron-left"></i> <span data-i18n="back">返回</span></div>
+            <div class="type-badge" style="background:#444; padding:2px 8px; border-radius:4px; font-size:0.8rem;" data-i18n="detail">详情</div>
+        </div>
+
+        <div class="detail-header">
+            <div class="detail-title-group">
+                <div class="detail-icon-circle" id="d-icon"><i class="fas fa-receipt"></i></div>
+                <div id="d-name-display" class="detail-name-display">午餐</div>
+                <div id="d-edit-cats" class="cat-row" style="display:none; flex:1; overflow-x:auto;"></div>
+            </div>
+            <div id="d-amount-display" class="detail-amount-display">-225</div>
+            <input type="number" id="d-amount-edit" class="edit-input-num" style="display:none;">
+        </div>
+
+        <div id="d-sub-cat-container" style="margin-bottom: 15px; display:none;">
+            <div class="sub-cat-area" id="d-sub-cat-area"></div>
+        </div>
+
+        <input type="text" id="d-note-edit" class="note-input-edit" placeholder="写点备注..." style="display:none; width:100%; background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); padding:10px; border-radius:8px; margin-bottom:20px; outline:none;">
+
+        <div class="detail-info-row"><span data-i18n="creator">创建者:</span> <span class="detail-info-val" data-i18n="me">我</span></div>
+        <div class="detail-info-row"><span data-i18n="time">时间:</span> <span class="detail-info-val" id="d-time">2026-09-29 19:08</span></div>
+
+        <div class="detail-actions">
+            <button class="btn-text red" onclick="deleteCurrentItem()" data-i18n="delete">删除</button>
+            <div>
+                <button class="btn-text" onclick="closeDetail()" data-i18n="cancel">取消</button>
+                <button class="btn-text bold" id="editToggleBtn" onclick="toggleEditMode()" data-i18n="edit">编辑</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. 初始化与多语言 ---
+    const today = new Date();
+    const dateStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    document.getElementById('headerDate').innerText = dateStr;
+    document.getElementById('currentDateSmall').innerText = String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+    let expenses = [];
+    let currentExp = "";
+    let currentLang = 'zh-CN';
+    let currentType = 'expense';
+
+    let editingItemId = null;
+    let isEditMode = false;
+    let editMainCat = "";
+    let editSubCat = "";
+    let editCustomText = "";
+
+    const i18n = {
+        'zh-CN': { back:'返回', settings:'设置', language:'语言', theme:'主题', sysTheme:'跟随系统', lightTheme:'浅色模式', darkTheme:'深色模式', feedback:'意见反馈', sendFeedback:'发送', expense:'支出', income:'收入', emptyMsg:'还没有记录，来记一笔吧', feedbackPlaceholder:'请输入建议...', detail:'详情', creator:'创建者:', time:'时间:', delete:'删除', cancel:'取消', edit:'编辑', save:'保存', me:'我' },
+        'zh-TW': { back:'返回', settings:'設定', language:'語言', theme:'主題', sysTheme:'跟隨系統', lightTheme:'淺色模式', darkTheme:'深色模式', feedback:'意見回饋', sendFeedback:'發送', expense:'支出', income:'收入', emptyMsg:'還沒有記錄，來記一筆吧', feedbackPlaceholder:'請輸入建議...', detail:'詳情', creator:'創建者:', time:'時間:', delete:'刪除', cancel:'取消', edit:'編輯', save:'儲存', me:'我' },
+        'en': { back:'Back', settings:'Settings', language:'Language', theme:'Theme', sysTheme:'System', lightTheme:'Light', darkTheme:'Dark', feedback:'Feedback', sendFeedback:'Send', expense:'Expense', income:'Income', emptyMsg:'No records', feedbackPlaceholder:'Enter suggestions...', detail:'Details', creator:'Creator:', time:'Time:', delete:'Delete', cancel:'Cancel', edit:'Edit', save:'Save', me:'Me' },
+        'ja': { back:'戻る', settings:'設定', language:'言語', theme:'テーマ', sysTheme:'システム', lightTheme:'ライト', darkTheme:'ダーク', feedback:'フィードバック', sendFeedback:'送信', expense:'支出', income:'収入', emptyMsg:'記録なし', feedbackPlaceholder:'意見を入力...', detail:'詳細', creator:'作成者:', time:'時刻:', delete:'削除', cancel:'キャンセル', edit:'編集', save:'保存', me:'私' }
+    };
+
+    const categories = {
+        expense: {
+            "cat_food": ["sub_breakfast", "sub_lunch", "sub_dinner", "sub_snack", "sub_treat"],
+            "cat_transport": ["sub_bus", "sub_taxi", "sub_ticket", "sub_gas"],
+            "cat_shopping": ["sub_daily", "sub_clothes", "sub_digital", "sub_online"],
+            "cat_home": ["sub_rent", "sub_utility", "sub_property", "sub_repair"],
+            "cat_fun": ["sub_movie", "sub_game", "sub_travel", "sub_ktv"],
+            "cat_medical": ["sub_register", "sub_medicine", "sub_checkup"],
+            "cat_edu": ["sub_training", "sub_books", "sub_tuition"],
+            "cat_social": ["sub_redpacket", "sub_gift", "sub_meal"],
+            "cat_other": []
+        },
+        income: {
+            "inc_salary": ["sub_base_salary", "sub_bonus", "sub_allowance"],
+            "inc_part": ["sub_freelance", "sub_overtime"],
+            "inc_other": []
+        }
+    };
+
+    const i18n_cats = {
+        'zh-CN': {
+            cat_food:'餐饮', cat_transport:'交通', cat_shopping:'购物', cat_home:'居住', cat_fun:'娱乐', cat_medical:'医疗', cat_edu:'教育', cat_social:'人情', cat_other:'其他',
+            sub_breakfast:'早餐', sub_lunch:'午餐', sub_dinner:'晚餐', sub_snack:'零食', sub_treat:'请客',
+            sub_bus:'公交地铁', sub_taxi:'打车', sub_ticket:'火车机票', sub_gas:'加油',
+            sub_daily:'日用', sub_clothes:'服饰', sub_digital:'数码', sub_online:'网购',
+            sub_rent:'房租', sub_utility:'水电煤', sub_property:'物业', sub_repair:'维修',
+            sub_movie:'电影', sub_game:'游戏', sub_travel:'旅游', sub_ktv:'KTV',
+            sub_register:'挂号', sub_medicine:'买药', sub_checkup:'体检',
+            sub_training:'培训', sub_books:'书籍', sub_tuition:'学费',
+            sub_redpacket:'红包', sub_gift:'礼物', sub_meal:'聚餐',
+            inc_salary:'工资', inc_part:'兼职', inc_other:'其他',
+            sub_base_salary:'基本工资', sub_bonus:'奖金', sub_allowance:'补贴',
+            sub_freelance:'兼职收入', sub_overtime:'加班费'
+        },
+        'zh-TW': {
+            cat_food:'餐飲', cat_transport:'交通', cat_shopping:'購物', cat_home:'居住', cat_fun:'娛樂', cat_medical:'醫療', cat_edu:'教育', cat_social:'人情', cat_other:'其他',
+            sub_breakfast:'早餐', sub_lunch:'午餐', sub_dinner:'晚餐', sub_snack:'零食', sub_treat:'請客',
+            sub_bus:'公交地鐵', sub_taxi:'打車', sub_ticket:'火車機票', sub_gas:'加油',
+            sub_daily:'日用', sub_clothes:'服飾', sub_digital:'數碼', sub_online:'網購',
+            sub_rent:'房租', sub_utility:'水電煤', sub_property:'物業', sub_repair:'維修',
+            sub_movie:'電影', sub_game:'遊戲', sub_travel:'旅遊', sub_ktv:'KTV',
+            sub_register:'掛號', sub_medicine:'買藥', sub_checkup:'體檢',
+            sub_training:'培訓', sub_books:'書籍', sub_tuition:'學費',
+            sub_redpacket:'紅包', sub_gift:'禮物', sub_meal:'聚餐',
+            inc_salary:'工資', inc_part:'兼職', inc_other:'其他',
+            sub_base_salary:'基本工資', sub_bonus:'獎金', sub_allowance:'補貼',
+            sub_freelance:'兼職收入', sub_overtime:'加班費'
+        },
+        'en': {
+            cat_food:'Food', cat_transport:'Transport', cat_shopping:'Shopping', cat_home:'Home', cat_fun:'Fun', cat_medical:'Medical', cat_edu:'Edu', cat_social:'Social', cat_other:'Other',
+            sub_breakfast:'Breakfast', sub_lunch:'Lunch', sub_dinner:'Dinner', sub_snack:'Snack', sub_treat:'Treat',
+            sub_bus:'Bus', sub_taxi:'Taxi', sub_ticket:'Ticket', sub_gas:'Gas',
+            sub_daily:'Daily', sub_clothes:'Clothes', sub_digital:'Digital', sub_online:'Online',
+            sub_rent:'Rent', sub_utility:'Utility', sub_property:'Property', sub_repair:'Repair',
+            sub_movie:'Movie', sub_game:'Game', sub_travel:'Travel', sub_ktv:'KTV',
+            sub_register:'Register', sub_medicine:'Medicine', sub_checkup:'Checkup',
+            sub_training:'Training', sub_books:'Books', sub_tuition:'Tuition',
+            sub_redpacket:'Red Packet', sub_gift:'Gift', sub_meal:'Meal',
+            inc_salary:'Salary', inc_part:'Part-time', inc_other:'Other',
+            sub_base_salary:'Base Salary', sub_bonus:'Bonus', sub_allowance:'Allowance',
+            sub_freelance:'Freelance', sub_overtime:'Overtime'
+        },
+        'ja': {
+            cat_food:'飲食', cat_transport:'交通', cat_shopping:'買い物', cat_home:'居住', cat_fun:'娯楽', cat_medical:'医療', cat_edu:'教育', cat_social:'交際', cat_other:'その他',
+            sub_breakfast:'朝食', sub_lunch:'昼食', sub_dinner:'夕食', sub_snack:'おやつ', sub_treat:'奢り',
+            sub_bus:'バス', sub_taxi:'タクシー', sub_ticket:'切符', sub_gas:'ガソリン',
+            sub_daily:'日用品', sub_clothes:'服', sub_digital:'デジタル', sub_online:'ネット通販',
+            sub_rent:'家賃', sub_utility:'光熱費', sub_property:'管理費', sub_repair:'修理',
+            sub_movie:'映画', sub_game:'ゲーム', sub_travel:'旅行', sub_ktv:'カラオケ',
+            sub_register:'診察', sub_medicine:'薬', sub_checkup:'健康診断',
+            sub_training:'習い事', sub_books:'本', sub_tuition:'授業料',
+            sub_redpacket:'お年玉', sub_gift:'プレゼント', sub_meal:'会食',
+            inc_salary:'給料', inc_part:'アルバイト', inc_other:'その他',
+            sub_base_salary:'基本給', sub_bonus:'ボーナス', sub_allowance:'手当',
+            sub_freelance:'フリーランス', sub_overtime:'残業代'
+        }
+    };
+
+    const catIcons = {
+        expense: { "cat_food": "fa-utensils", "cat_transport": "fa-bus", "cat_shopping": "fa-bag-shopping", "cat_home": "fa-house", "cat_fun": "fa-gamepad", "cat_medical": "fa-notes-medical", "cat_edu": "fa-graduation-cap", "cat_social": "fa-gift", "cat_other": "fa-circle-question" },
+        income: { "inc_salary": "fa-wallet", "inc_part": "fa-laptop-code", "inc_other": "fa-coins" }
+    };
+
+    const catColorClasses = {
+        expense: { "cat_food": "icon-food", "cat_transport": "icon-transport", "cat_shopping": "icon-shopping", "cat_home": "icon-home", "cat_fun": "icon-fun", "cat_medical": "icon-medical", "cat_edu": "icon-edu", "cat_social": "icon-social", "cat_other": "icon-other" },
+        income: { "inc_salary": "icon-salary", "inc_part": "icon-part", "inc_other": "icon-other" }
+    };
+
+    const tagColorClasses = {
+        expense: { "cat_food": "color-food", "cat_transport": "color-transport", "cat_shopping": "color-shopping", "cat_home": "color-home", "cat_fun": "color-fun", "cat_medical": "color-medical", "cat_edu": "color-edu", "cat_social": "color-social", "cat_other": "color-other" },
+        income: { "inc_salary": "color-salary", "inc_part": "color-part", "inc_other": "color-other" }
+    };
+
+    let addMainCat = "cat_food";
+    let addSubCat = "sub_lunch";
+    let addCustomText = "";
+
+    // --- 2. 核心逻辑函数 ---
+
+    function updateTexts() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if(i18n[currentLang][key]) el.innerText = i18n[currentLang][key];
+        });
+        document.getElementById('emptyState').innerText = i18n[currentLang]['emptyMsg'];
+        document.getElementById('feedbackContent').placeholder = i18n[currentLang]['feedbackPlaceholder'];
+        renderListUI();
+        if(document.getElementById('addModal').style.display === 'flex') renderAddCategories();
+        if(document.getElementById('detailModal').style.display === 'flex') {
+            const item = expenses.find(e => e.id === editingItemId);
+            if(item) updateDetailView(item);
+        }
+    }
+
+    function setLanguage(lang, el) {
+        currentLang = lang;
+        document.querySelectorAll('#langList .option-item').forEach(item => item.classList.remove('active'));
+        el.classList.add('active');
+        updateTexts();
+    }
+
+    function setTheme(theme, el) {
+        document.querySelectorAll('#themeList .option-item').forEach(item => item.classList.remove('active'));
+        el.classList.add('active');
+        if (theme === 'light') document.body.classList.add('light-theme');
+        else if (theme === 'dark') document.body.classList.remove('light-theme');
+        else {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) document.body.classList.add('light-theme');
+            else document.body.classList.remove('light-theme');
+        }
+    }
+
+    function switchType(type) {
+        currentType = type;
+        const btnExp = document.getElementById('btnExpense');
+        const btnInc = document.getElementById('btnIncome');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        if (type === 'expense') {
+            btnExp.classList.add('active');
+            btnInc.classList.remove('active');
+            confirmBtn.className = 'confirm-btn expense-confirm';
+            addMainCat = "cat_food";
+            addSubCat = "sub_lunch";
+        } else {
+            btnInc.classList.add('active');
+            btnExp.classList.remove('active');
+            confirmBtn.className = 'confirm-btn income-confirm';
+            addMainCat = "inc_salary";
+            addSubCat = "sub_base_salary";
+        }
+        addCustomText = "";
+        renderAddCategories();
+    }
+
+    function renderCategoryTags(containerId, selectedMain, onSelect, useColors = false) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        container.innerHTML = '';
+        const currentCats = categories[currentType];
+
+        Object.keys(currentCats).forEach(catKey => {
+            const iconClass = catIcons[currentType][catKey] || "fa-receipt";
+            const catName = i18n_cats[currentLang][catKey] || catKey;
+            const colorClass = useColors ? (tagColorClasses[currentType][catKey] || "") : "";
+
+            const tag = document.createElement('div');
+            tag.innerHTML = `<i class="fas ${iconClass}"></i> ${catName}`;
+            tag.className = `tag ${colorClass} ${catKey === selectedMain ? 'active' : ''}`;
+            tag.onclick = () => onSelect(catKey);
+            container.appendChild(tag);
+        });
+    }
+
+    function renderAddCategories() {
+        renderCategoryTags('mainCats', addMainCat, (cat) => {
+            addMainCat = cat;
+            addSubCat = categories[currentType][cat].length > 0 ? categories[currentType][cat][0] : "";
+            addCustomText = "";
+            renderAddCategories();
+            renderSubCategoryTags();
+        }, false);
+        renderSubCategoryTags();
+    }
+
+    function renderSubCategoryTags() {
+        const container = document.getElementById('subCatArea');
+        if(!container) return;
+        container.innerHTML = '';
+        const currentCats = categories[currentType];
+        const subList = currentCats[addMainCat] || [];
+
+        if (addMainCat.endsWith('_other')) {
+            const input = document.createElement('input');
+            input.type = "text"; input.className = "sub-tag"; input.style.background = "transparent"; input.style.border = "none"; input.style.color = "var(--text-main)"; input.style.width = "100%"; input.style.outline = "none";
+            input.placeholder = currentLang === 'en' ? 'Enter reason...' : (currentLang === 'ja' ? '理由を入力...' : '请输入具体原因...');
+            input.value = addCustomText;
+            input.oninput = (e) => addCustomText = e.target.value;
+            setTimeout(() => input.focus(), 100);
+            container.appendChild(input);
+        } else {
+            subList.forEach(subKey => {
+                const subName = i18n_cats[currentLang][subKey] || subKey;
+                const tag = document.createElement('div');
+                tag.className = `sub-tag ${subKey === addSubCat ? 'active' : ''}`;
+                tag.innerText = subName;
+                tag.onclick = () => { addSubCat = subKey; renderSubCategoryTags(); };
+                container.appendChild(tag);
+            });
+        }
+    }
+
+    // 【核心修改】提交记录到后端 MySQL (带 Token)
+    async function submitRecord() {
+        if (!currentExp || currentExp === "0") return alert("请输入金额");
+        let finalAmount; try { finalAmount = new Function('return ' + currentExp)(); } catch(e) { return alert("格式错误"); }
+        if (finalAmount <= 0) return alert("金额必须大于0");
+
+        let finalCatName = addSubCat;
+        if (addMainCat.endsWith('_other')) finalCatName = addCustomText || "其他";
+
+        const recordData = {
+            amount: finalAmount,
+            date: dateStr,
+            note: document.getElementById('newNote').value,
+            type: currentType,
+            category: addMainCat,
+            subCat: (addMainCat.endsWith('_other')) ? (addCustomText || "其他") : addSubCat
+        };
+
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch('/api/save-expense', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(recordData)
+            });
+
+            if (response.ok) {
+                const result = await response.text();
+                if(result === 'success') {
+                    closeAddModal();
+                    currentExp = "";
+                    document.getElementById('newNote').value = "";
+                    addCustomText = "";
+                    loadAndRenderData();
+                } else {
+                    alert("保存失败: " + result);
+                }
+            } else {
+                alert("服务器连接失败");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("网络异常，无法保存");
+        }
+    }
+
+    // 【核心修改】从后端加载数据并渲染 (带 Token)
+    async function loadAndRenderData() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            document.getElementById('login-overlay').style.display = 'flex';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/get-expenses', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+            if (!response.ok) throw new Error('网络响应异常');
+
+            const data = await response.json();
+
+            expenses = data.map(item => ({
+                id: item.id,
+                amount: parseFloat(item.amount),
+                date: item.date,
+                note: item.note || "",
+                type: item.type || "expense",
+                category: item.category || "cat_other",
+                mainCat: item.category || "cat_other",
+                subCat: item.subCat,
+                time: "20:40",
+                fullTime: item.date
+            }));
+
+            renderListUI();
+
+        } catch (error) {
+            console.error('加载数据失败:', error);
+            expenses = [];
+            renderListUI();
+        }
+    }
+
+    // 纯 UI 渲染函数
+    function renderListUI() {
+        const container = document.getElementById('listContainer');
+        const emptyState = document.getElementById('emptyState');
+        const totalValueEl = document.getElementById('totalValue');
+        const totalSignEl = document.getElementById('totalSign');
+
+        container.innerHTML = '';
+
+        let totalExpense = 0;
+        let totalIncome = 0;
+
+        if (expenses.length === 0) {
+            emptyState.style.display = 'block';
+            if(totalValueEl) totalValueEl.innerText = '0.0';
+            if(totalSignEl) totalSignEl.innerText = '-';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+
+        [...expenses].reverse().forEach(item => {
+            if (item.type === 'expense') totalExpense += item.amount;
+            else totalIncome += item.amount;
+
+            let displayName = "";
+            let iconClass = "fa-receipt";
+            let colorStyle = "color: var(--color-expense)";
+            let sign = "-";
+
+            let mainCatName = i18n_cats[currentLang][item.category] || item.category;
+
+            if (item.category && item.category.endsWith('_other')) {
+                if (item.subCat && item.subCat.trim() !== "" && item.subCat !== item.category) {
+                    displayName = item.subCat;
+                } else {
+                    displayName = mainCatName;
+                }
+                iconClass = item.type === 'expense' ? catIcons.expense['cat_other'] : catIcons.income['inc_other'];
+            } else {
+                displayName = mainCatName;
+                if(item.category === 'cat_food') iconClass = "fa-utensils";
+                else if(item.category === 'cat_transport') iconClass = "fa-bus";
+                else if(item.category === 'cat_shopping') iconClass = "fa-bag-shopping";
+                else if(item.category === 'cat_fun') iconClass = "fa-gamepad";
+                else if(item.category === 'inc_salary') iconClass = "fa-wallet";
+                else if(item.category === 'inc_part') iconClass = "fa-laptop-code";
+            }
+
+            if(item.type === 'income') { colorStyle = "color: var(--color-income)"; sign = "+"; }
+
+            const html = `
+            <div class="timeline-item" onclick="openDetail(${item.id})">
+                <div class="item-left">
+                    <div class="item-icon ${item.type === 'expense' ? catColorClasses.expense[item.category] : catColorClasses.income[item.category]}"><i class="fas ${iconClass}"></i></div>
+                    <div class="item-time">${item.time}</div>
+                </div>
+                <div class="item-mid">
+                    <div class="item-title">${displayName}</div>
+                    <div class="item-desc">${item.note}</div>
+                </div>
+                <div class="item-right">
+                    <div class="item-amount" style="${colorStyle}">${sign}${item.amount}</div>
+                </div>
+            </div>`;
+            container.innerHTML += html;
+        });
+
+        const net = totalIncome - totalExpense;
+        if(totalSignEl) totalSignEl.innerText = net >= 0 ? '+' : '-';
+        if(totalValueEl) totalValueEl.innerText = Math.abs(net).toFixed(1);
+
+        const totalDisplay = document.getElementById('headerTotalDisplay');
+        if(totalDisplay) {
+            totalDisplay.className = net >= 0 ? 'total-amount text-income' : 'total-amount text-expense';
+        }
+    }
+
+    // --- 3. 详情与编辑逻辑 ---
+    function openDetail(id) {
+        const item = expenses.find(e => e.id === id); if(!item) return;
+
+        editingItemId = id; isEditMode = false;
+
+        editMainCat = item.mainCat || item.category;
+        editSubCat = item.subCat || item.category;
+        editCustomText = "";
+
+        updateDetailView(item);
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function updateDetailView(item) {
+        const currentMainCat = isEditMode ? editMainCat : (item.mainCat || item.category);
+        const iconClass = catIcons[item.type][currentMainCat] || 'fa-receipt';
+        const colorClass = catColorClasses[item.type][currentMainCat] || "";
+        const dIcon = document.getElementById('d-icon');
+        dIcon.innerHTML = `<i class="fas ${iconClass}"></i>`;
+        dIcon.className = `detail-icon-circle ${colorClass}`;
+
+        if (isEditMode) {
+            document.getElementById('d-amount-display').style.display = 'none';
+            document.getElementById('d-amount-edit').style.display = 'block';
+            document.getElementById('d-amount-edit').value = item.amount;
+            document.getElementById('d-name-display').style.display = 'none';
+            document.getElementById('d-edit-cats').style.display = 'flex';
+            document.getElementById('d-sub-cat-container').style.display = 'block';
+            document.getElementById('d-note-edit').style.display = 'block';
+            document.getElementById('d-note-edit').value = item.note || "";
+
+            renderCategoryTags('d-edit-cats', editMainCat, (cat) => {
+                editMainCat = cat;
+                editSubCat = categories[item.type][cat] && categories[item.type][cat].length > 0 ? categories[item.type][cat][0] : "";
+                editCustomText = "";
+                refreshEditSubCats(item.type);
+                updateDetailView(item);
+            }, true);
+
+            refreshEditSubCats(item.type);
+        } else {
+            document.getElementById('d-amount-display').style.display = 'block';
+            document.getElementById('d-amount-display').innerText = (item.type === 'expense' ? '-' : '+') + item.amount;
+            document.getElementById('d-amount-display').style.color = item.type === 'expense' ? 'var(--color-expense)' : 'var(--color-income)';
+            document.getElementById('d-amount-edit').style.display = 'none';
+            document.getElementById('d-name-display').style.display = 'block';
+
+            let detailName = "";
+            if ((item.category && item.category.endsWith('_other')) && item.subCat && item.subCat.trim() !== "" && item.subCat !== item.category) {
+                detailName = item.subCat;
+            } else {
+                detailName = i18n_cats[currentLang][item.subCat || item.category] || (item.subCat || item.category);
+            }
+            document.getElementById('d-name-display').innerText = detailName;
+
+            document.getElementById('d-edit-cats').style.display = 'none';
+            document.getElementById('d-sub-cat-container').style.display = 'none';
+            document.getElementById('d-note-edit').style.display = 'none';
+        }
+        document.getElementById('d-time').innerText = item.fullTime || dateStr;
+        document.getElementById('editToggleBtn').innerText = isEditMode ? i18n[currentLang]['save'] : i18n[currentLang]['edit'];
+    }
+
+    function refreshEditSubCats(type) {
+        const container = document.getElementById('d-sub-cat-area');
+        if(!container) return;
+        container.innerHTML = '';
+        const currentCats = categories[type];
+        const subList = currentCats[editMainCat] || [];
+
+        if (editMainCat.endsWith('_other')) {
+            const input = document.createElement('input');
+            input.type = "text"; input.className = "sub-tag"; input.style.background = "transparent"; input.style.border = "none"; input.style.color = "var(--text-main)"; input.style.width = "100%"; input.style.outline = "none";
+            input.placeholder = currentLang === 'en' ? 'Enter reason...' : (currentLang === 'ja' ? '理由を入力...' : '请输入具体原因...');
+            input.value = editCustomText;
+            input.oninput = (e) => editCustomText = e.target.value;
+            setTimeout(() => input.focus(), 100);
+            container.appendChild(input);
+        } else {
+            subList.forEach(subKey => {
+                const subName = i18n_cats[currentLang][subKey] || subKey;
+                const tag = document.createElement('div');
+                tag.className = `sub-tag ${subKey === editSubCat ? 'active' : ''}`;
+                tag.innerText = subName;
+                tag.onclick = () => { editSubCat = subKey; refreshEditSubCats(type); };
+                container.appendChild(tag);
+            });
+        }
+    }
+
+    // 【核心修改】保存编辑时同步到后端
+    async function toggleEditMode() {
+        const item = expenses.find(e => e.id === editingItemId); if(!item) return;
+
+        if (!isEditMode) {
+            isEditMode = true;
+            editMainCat = item.mainCat || item.category;
+            editSubCat = item.subCat || item.category;
+            editCustomText = "";
+        } else {
+            const newAmount = parseFloat(document.getElementById('d-amount-edit').value);
+            if(newAmount && newAmount > 0) item.amount = newAmount;
+
+            item.mainCat = editMainCat;
+            item.subCat = (editMainCat.endsWith('_other')) ? (editCustomText || "其他") : editSubCat;
+            item.note = document.getElementById('d-note-edit').value;
+            item.category = editMainCat;
+
+            const token = localStorage.getItem('token');
+
+            // 尝试调用后端更新接口
+            try {
+                await fetch('/api/update-expense', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        id: item.id,
+                        amount: item.amount,
+                        category: item.category,
+                        subCat: item.subCat,
+                        note: item.note,
+                        type: item.type
+                    })
+                });
+            } catch (e) {
+                console.warn("后端更新失败，仅更新了本地显示", e);
+            }
+
+            isEditMode = false;
+            loadAndRenderData(); // 重新加载以确认数据一致性
+        }
+        updateDetailView(item);
+    }
+
+    // 【核心修改】删除时调用后端接口
+    async function deleteCurrentItem() {
+        if(!confirm(i18n[currentLang]['delete'] + "?")) return;
+
+        const token = localStorage.getItem('token');
+
+        try {
+            // 假设后端删除接口为 /api/delete-expense?id=xxx
+            const response = await fetch(`/api/delete-expense?id=${editingItemId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            if (response.ok) {
+                closeDetail();
+                loadAndRenderData(); // 重新从服务器拉取数据
+            } else {
+                alert("删除失败，服务器返回错误");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("网络异常，删除失败");
+        }
+    }
+
+    function closeDetail() { document.getElementById('detailModal').style.display = 'none'; editingItemId = null; isEditMode = false; }
+
+    function pressKey(key) {
+        const screen = document.getElementById('calcScreen');
+        if (key === 'C') currentExp = "";
+        else if (key === 'del') currentExp = currentExp.slice(0, -1);
+        else if (key === '=') { calculateResult(); return; }
+        else {
+            const ops = ['+', '-', '*', '/'];
+            if (ops.includes(key) && ops.includes(currentExp.slice(-1))) currentExp = currentExp.slice(0, -1) + key;
+            else currentExp += key;
+        }
+        screen.innerText = currentExp || "0";
+    }
+    function calculateResult() {
+        if (!currentExp) return;
+        try {
+            let safeExp = currentExp.replace(/×/g, '*').replace(/÷/g, '/');
+            if (['+','-','*','/'].includes(safeExp.slice(-1))) safeExp = safeExp.slice(0, -1);
+            currentExp = (Math.round(new Function('return ' + safeExp)() * 100) / 100).toString();
+            document.getElementById('calcScreen').innerText = currentExp;
+        } catch (e) { document.getElementById('calcScreen').innerText = "Error"; currentExp = ""; }
+    }
+
+    async function submitFeedback() {
+        const content = document.getElementById('feedbackContent').value.trim();
+        if (!content) return alert("请填写内容");
+        const btn = document.getElementById('feedbackBtn');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        btn.disabled = true;
+        try {
+            const response = await fetch('/api/feedback', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content: content })
+            });
+            if (response.ok) {
+                const result = await response.text();
+                if(result === 'success') {
+                    alert("发送成功！");
+                    document.getElementById('feedbackContent').value = '';
+                } else alert('失败: ' + result);
+            } else alert('服务器连接失败');
+        } catch (error) { alert('无法连接后端'); }
+        finally { btn.innerHTML = originalHtml; btn.disabled = false; }
+    }
+
+    function openAddModal() {
+        currentExp = ""; document.getElementById('calcScreen').innerText = "0";
+        document.getElementById('addModal').style.display = 'flex';
+        switchType('expense');
+    }
+    function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
+    // --- 【新增】登录相关逻辑 ---
+
+    window.onload = function() {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+
+        if (token && userId) {
+            document.getElementById('login-overlay').style.display = 'none';
+            updateTexts();
+            loadAndRenderData();
+        } else {
+            document.getElementById('login-overlay').style.display = 'flex';
+        }
+    };
+
+    async function sendLoginCode() {
+        const account = document.getElementById('login-phone').value.trim();
+        const btn = document.getElementById('btn-send-code');
+
+        if (!account || !account.includes('@')) {
+            alert("请输入有效的邮箱地址");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "60s后重发";
+        let seconds = 60;
+        const timer = setInterval(() => {
+            seconds--;
+            btn.innerText = seconds + "s后重发";
+            if (seconds <= 0) {
+                clearInterval(timer);
+                btn.disabled = false;
+                btn.innerText = "获取验证码";
+            }
+        }, 1000);
+
+        try {
+            const res = await fetch('/api/auth/send-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone: account })
+            });
+            const data = await res.json();
+            alert(data.msg);
+        } catch (e) {
+            alert("网络异常，发送失败");
+            clearInterval(timer);
+            btn.disabled = false;
+            btn.innerText = "获取验证码";
+        }
+    }
+
+    async function doLogin() {
+        const phone = document.getElementById('login-phone').value.trim();
+        const code = document.getElementById('login-code').value.trim();
+
+        if (!phone || !code) {
+            alert("请填写邮箱和验证码");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone: phone, code: code })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('userId', data.userId);
+
+                alert("登录成功！欢迎回来。");
+                document.getElementById('login-overlay').style.display = 'none';
+                updateTexts();
+                loadAndRenderData();
+            } else {
+                alert("登录失败: " + data.msg);
+            }
+        } catch (e) {
+            alert("网络异常，登录失败");
+        }
+    }
+
+    function doLogout() {
+        if(confirm("确定要退出登录吗？")) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            location.reload();
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('settingsModal')) closeSettings();
+        if (event.target == document.getElementById('addModal')) closeAddModal();
+        if (event.target == document.getElementById('detailModal')) closeDetail();
+    }
+</script>
+</body>
+</html>
