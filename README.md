@@ -54,26 +54,10 @@ spring.datasource.password=你的数据库密码
 
 方式二：使用命令行运行
 在项目根目录下，打开终端执行：
-
-bash
 mvn spring-boot:run
+
 5. 访问应用
 项目启动成功后，打开浏览器访问：
 👉 http://localhost:8080
 
-📂 项目结构
-text
-DailyJournal
-├── src
-│   ├── main
-│   │   ├── java/org/example/dailyjournal  # 核心业务代码
-│   │   │   ├── controller                 # 控制层
-│   │   │   ├── entity                     # 数据库实体类 (Expense, User 等)
-│   │   │   ├── repository                 # 数据访问层
-│   │   │   └── DailyJournalApplication    # 【项目唯一启动入口】
-│   │   └── resources
-│   │       ├── static                     # 前端静态资源 (HTML/CSS/JS)
-│   │       └── application.properties     # 配置文件
-│   └── test                               # 测试代码
-└── pom.xml                                # Maven 依赖配置
 如果这个项目对你有帮助，欢迎点个 Star ⭐！
