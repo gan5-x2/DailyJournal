@@ -1,3 +1,4 @@
+markdown
 # DailyJournal 个人收支记账系统 💰
 
 这是一个基于 Java Spring Boot 开发的个人收支记录管理平台。项目主要用于记录日常的消费开销与收入，帮助用户清晰地管理个人财务流水。
@@ -25,16 +26,17 @@
 ### 2. 初始化数据库
 1. 打开你的 MySQL 客户端（如 Navicat 或命令行）。
 2. 创建一个新的数据库，例如命名为 `dailyjournal`：
-   ```sql
-   CREATE DATABASE dailyjournal DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
-   3. 配置数据库连接
+
+CREATE DATABASE dailyjournal DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+3. 配置数据库连接
 在项目目录 src/main/resources/ 下找到 application.properties（或 application.yml），修改为你自己的数据库信息：
 
+properties
 spring.datasource.url=jdbc:mysql://localhost:3306/dailyjournal?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
 spring.datasource.username=root
 spring.datasource.password=你的数据库密码
-
 4. 启动项目（重要）
 本项目必须运行 DailyJournalApplication 这个主类才能完整启动。
 
@@ -46,7 +48,7 @@ spring.datasource.password=你的数据库密码
 
 在项目结构中找到这个文件：src/main/java/org/example/dailyjournal/DailyJournalApplication.java。
 
-点击 DailyJournalApplication 类名旁边的绿色三角形 Run 按钮，或者在打开该文件后点击右上角的绿三角。
+点击 DailyJournalApplication 类名旁边的绿色三角形 Run 按钮。
 
 看到控制台输出 Started DailyJournalApplication in x.x seconds 即代表启动成功。
 
