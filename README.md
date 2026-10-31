@@ -31,10 +31,10 @@
    3. 配置数据库连接
 在项目目录 src/main/resources/ 下找到 application.properties（或 application.yml），修改为你自己的数据库信息：
 
-properties
 spring.datasource.url=jdbc:mysql://localhost:3306/dailyjournal?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
 spring.datasource.username=root
 spring.datasource.password=你的数据库密码
+
 4. 启动项目（重要）
 本项目必须运行 DailyJournalApplication 这个主类才能完整启动。
 
