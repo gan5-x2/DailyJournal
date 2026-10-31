@@ -1,4 +1,3 @@
-markdown
 # DailyJournal 个人收支记账系统 💰
 
 这是一个基于 Java Spring Boot 开发的个人收支记录管理平台。项目主要用于记录日常的消费开销与收入，帮助用户清晰地管理个人财务流水。
